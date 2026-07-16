@@ -1,0 +1,17 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Keep the public repository focused on the cleaned reproducible dataset.
+data/official_release_candidates_*.csv
+data/official_release_import_audit.csv
+data/official_release_selected.csv
+data/xuhuiz_candidates_*.csv
+scripts/import_official_releases.py
+
+# Only publish the three headline renders; analyze.py regenerates everything.
+output/*
+!output/edge_calendar_fit.png
+!output/edge_calendar_linearization.png
+!output/composite_fit_comparison.png
