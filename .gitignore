@@ -11,9 +11,8 @@ data/xuhuiz_candidates_*.csv
 data/curated_new_benchmark_*.csv
 scripts/import_official_releases.py
 
-# Only publish the headline renders; analyze.py regenerates everything.
+# Only publish the three compact headline renders; scripts regenerate the rest.
 output/*
-!output/edge_calendar_fit.png
-!output/edge_calendar_linearization.png
-!output/composite_fit_comparison.png
-!output/measurement_coverage.png
+!output/first_hit_measurement.png
+!output/forecast_evidence.png
+!output/robustness_diagnostics.png

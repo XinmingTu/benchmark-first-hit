@@ -1,155 +1,296 @@
-# An Exposure–Threshold Theory of Benchmark First Hits
+# Theory: First-Hit Diffusion Under Selective Measurement
 
-This note states the theoretical interpretation of this repository. It is a
-working model, not a claim that a universal law has already been established.
-The current empirical object is the retrospective date on which a system
-capable of crossing a fixed benchmark score threshold became available. The
-system may use any model, agent, scaffold, tool configuration, or inference
-budget, provided that the benchmark edition, task set, metric, and denominator
-remain comparable.
+This note separates three things that a progress curve can otherwise blur:
 
-The proposed connection to environment learning is precise but limited:
-EdgeBench's within-run learning curves and this repository's calendar-time
-frontiers can share an **effective-exposure / threshold-discovery** structure.
-They do not necessarily share the same clock, learner, or causal mechanism.
+1. an exact representation of a benchmark frontier;
+2. a candidate model of latent capability unlocks; and
+3. the selective process by which those unlocks become measured.
 
-## 1. Two legitimate date estimands
+The representation is a theorem. The exposure model is a hypothesis. A good
+curve fit is not, by itself, evidence for the hypothesis.
 
-There are two different first-hit clocks, and they must not be described as if
-they were the same.
+## 1. The empirical object
 
-The **public-evidence frontier** assigns a score to the date on which sufficient
-evidence for that score first became public. It answers: “What did the public
-record establish by date \(\tau\)?” This is the clean estimand for studying
-disclosure, measurement coverage, and forecasting from information actually
-available at the time.
+Fix a benchmark edition, evaluated task set, metric, denominator, and score
+direction. Any base model, agent scaffold, tool stack, ensemble, or
+test-time-compute budget may set its record. This defines an **any-system
+frontier**, not a base-model leaderboard.
 
-The **retrospective capability-availability frontier** assigns a score to the
-release or submission date of the system that produced it, even when the score
-was published in a later back-test. It answers: “Given everything measured so
-far, when did a system with this demonstrated capability become available?”
-It is useful for reconstructing model and agent progress, but it can place a
-score before the benchmark itself existed. Such a date is a retrospective
-attribution, not a contemporaneously observed hit.
-
-If both dates are known, then for the same result
+Let a frozen corpus \(\mathcal C\) contain comparable score reports. Three
+first-hit times are conceptually distinct for benchmark \(b\) and score
+threshold \(q\):
 
 \[
-T^{\mathrm{cap}}_{bq}\le T^{\mathrm{pub}}_{bq}.
+\begin{aligned}
+U_{bq}
+&=\text{first time any available system could in fact attain }q,\\
+R^{\mathcal C}_{bq}
+&=\text{earliest system-availability date assigned by the frozen corpus},\\
+T^{\mathcal C}_{bq}
+&=\text{first date on which the corpus says attainment was publicly disclosed}.
+\end{aligned}
 \]
 
-The repository currently uses the capability-availability date as its primary
-`date` coordinate and records the provenance in `date_basis`. It exports every
-row that predates benchmark release as an explicit audit. A fully
-publication-time analysis requires a separate verified disclosure date for
-every retrospective result; the present corpus is not yet complete enough to
-claim that estimand.
-
-## 2. A representation identity is not a mechanism
-
-For benchmark \(b\) and a chosen date axis \(a\in\{\mathrm{cap},\mathrm{pub}\}\),
-let \(m_b^{(a)}(\tau)\in[0,1]\) be its best-so-far score by calendar date
-\(\tau\), after orienting the metric so that higher is better. For a score
-threshold \(q\in[0,1]\), define its assigned first-hit time
+Under complete and correctly dated evidence,
 
 \[
-T^{(a)}_{bq}
+U_{bq}\le R^{\mathcal C}_{bq}\le T^{\mathcal C}_{bq}.
+\]
+
+Their statistical meanings differ:
+
+- \(U\) is a latent capability unlock. Selective public results do not identify
+  it.
+- \(R^{\mathcal C}\) is a retrospective corpus attribution. A later back-test
+  can move it backward.
+- \(T^{\mathcal C}\) is a public-evidence time. It is the appropriate clock for
+  genuine real-time forecasting, but it requires a verified disclosure date.
+
+The present dataset primarily records \(R^{\mathcal C}\), with `date_basis`
+marking release, submission, evaluation, publication, and retrospective
+attributions. It must therefore be described as a
+**corpus-attributed retrospective frontier**, not as a point estimate of
+latent \(U\).
+
+## 2. The first-hit representation theorem
+
+Let \(m_b^{\mathcal C}(\tau)\in[0,1]\) be benchmark \(b\)'s corpus frontier by
+date \(\tau\). Draw a threshold \(Q\sim\mathrm{Uniform}(0,1)\), and define
+
+\[
+R^{\mathcal C}_{bQ}
 =
-\inf\{\tau:m_b^{(a)}(\tau)\ge q\}.
+\inf\{\tau:m_b^{\mathcal C}(\tau)\ge Q\}.
 \]
 
-If \(Q\sim\mathrm{Uniform}(0,1)\), then
+Then
 
 \[
-\Pr_Q(T^{(a)}_{bQ}\le \tau)
-=m_b^{(a)}(\tau).
+\begin{aligned}
+\Pr_Q(R^{\mathcal C}_{bQ}\le\tau)
+&=\int_0^1
+\mathbf 1\{q\le m_b^{\mathcal C}(\tau)\}\,dq\\
+&=m_b^{\mathcal C}(\tau).
+\end{aligned}
 \]
 
-For a fixed panel of \(B\) equally weighted benchmarks,
+For benchmark weights \(w_b\ge0\), \(\sum_b w_b=1\),
 
 \[
-X^{(a)}(\tau)
-=\frac{1}{B}\sum_{b=1}^{B}m_b^{(a)}(\tau)
-=\Pr_{b,Q}(T^{(a)}_{bQ}\le\tau),
+\boxed{
+X^{\mathcal C}(\tau)
+=
+\sum_b w_bm_b^{\mathcal C}(\tau)
+=
+\Pr_{B,Q}(R^{\mathcal C}_{BQ}\le\tau)
+}.
 \]
 
-where \(b\) is sampled uniformly from the panel. Thus the aggregate frontier is
-exactly the CDF of first-hit dates for a randomly selected benchmark and score
-height.
+Thus an equal-benchmark frontier is exactly the empirical CDF of assigned
+first-hit dates for a uniformly selected benchmark and score height. This is
+the project's cleanest result. It requires no sigmoid, exposure model, or
+learning interpretation.
 
-This identity is useful, but it is true for every monotone best-so-far curve.
-It does not explain why the first-hit distribution should be logistic, why
-progress occurred, or whether learning rather than search produced it. The
-"score atoms" here are nested attainment thresholds, not necessarily semantic
-skills, benchmark items, or equally important units of capability. Equal
-benchmark weighting and uniform weighting over score height are explicit
-measurement choices.
+The normalization is deliberately modest. Mapping each published score to
+\([0,1]\) makes every benchmark contribute one unit of **score mass**; it does
+not make one percentage point equally difficult or equally valuable across
+benchmarks. An overlap-calibrated IRT index can estimate a different latent
+capability scale, as in the [Epoch Capabilities
+Index](https://epoch.ai/data/eci-documentation/methodology), but it requires
+reliably matched system configurations across benchmarks and answers a
+different question.
 
-## 3. The effective-exposure model
+## 3. Continuous score mass and censoring
 
-Let \(A(t)\ge0\) denote cumulative **effective exposure** to opportunities for
-progress. Depending on the setting, it may summarize valid attempts, feedback
-informativeness, exploration novelty, retained memory, model updates, research
-effort, and algorithmic efficiency. Give each score threshold a
-discoverability parameter \(\lambda>0\). A simple sufficient model is
+Suppose a benchmark's genuine corpus frontier is
 
 \[
-\Pr(T>t\mid\lambda)=\exp[-\lambda A(t)].
+(d_1,s_1),\ldots,(d_K,s_K),
+\qquad
+0<s_1<\cdots<s_K\le1.
 \]
 
-If the score-weighted distribution of discoverability is \(G\), the expected
+Its one unit of score mass decomposes exactly into:
+
+\[
+\underbrace{s_1}_{\text{left-censored/prevalent}}
++
+\underbrace{\sum_{j=2}^{K}(s_j-s_{j-1})}_{\text{dated frontier jumps}}
++
+\underbrace{(1-s_K)}_{\text{unresolved/measurement-censored}}
+=1.
+\]
+
+- The first recorded score is prevalent mass: those thresholds were already
+  attained at the first reliable observation, but their earlier dates are not
+  known.
+- A later jump of size \(s_j-s_{j-1}\) is tied score mass assigned to date
+  \(d_j\). It is one clustered record event, not thousands of independent
+  0.1-point observations.
+- Remaining mass is unresolved. It is right-censored only to the extent that
+  the relevant source was actually audited through a stated cutoff. A stale
+  benchmark is measurement-censored, not evidence of no latent progress.
+
+For a public-evidence analysis, time before benchmark release is not at risk.
+For a retrospective analysis, an older system may be back-tested and assigned
+a date before the benchmark existed; that is a visible backdating operation,
+not a contemporaneous hit.
+
+A previous public low score ordinarily does not prove that all unreported
+systems were below a threshold. Consequently, intervals
+\((d_{j-1},d_j]\) are valid latent-capability censoring intervals only under a
+systematic inspection protocol. The main corpus generally supports exact
+**assigned record dates**, not exact latent unlock dates.
+
+This decomposition resolves the expanding-panel problem without aligning every
+benchmark to \(t-t_{\mathrm{first}}\). A new benchmark's first score enters as
+left-censored prevalent mass rather than a newly created calendar-time jump.
+Subsequent events remain on real calendar time.
+
+## 4. A capability-threshold bridge
+
+An IRT-style response model makes the score-threshold interpretation explicit.
+Suppose configuration \(m\) has capability \(C_m\), and benchmark \(b\) has
+difficulty \(D_b\) and discrimination \(\alpha_b>0\):
+
+\[
+p_{mb}
+=
+\sigma[\alpha_b(C_m-D_b)].
+\]
+
+Attaining score threshold \(q\) is equivalent to crossing the latent difficulty
+
+\[
+\theta_{bq}
+=
+D_b+\frac{\operatorname{logit}(q)}{\alpha_b}.
+\]
+
+Let
+
+\[
+C^*(t)=\max_{m:r_m\le t}C_m
+\]
+
+be the best capability among configurations available by \(t\). Then
+
+\[
+\boxed{
+S(t)
+=
+\Pr_w[\theta\le C^*(t)]
+=
+G_\theta(C^*(t))
+}.
+\]
+
+This gives a clean bridge:
+
+- benchmark score mass is a distribution of capability thresholds;
+- model-and-agent progress supplies a frontier capability clock \(C^*(t)\);
+- the aggregate first-hit curve is the threshold CDF evaluated at that clock.
+
+If \(G_\theta\) is logistic and \(C^*(t)\) is affine in calendar time, the
+result is a calendar logistic. If \(C^*(t)\) is affine in log interaction time,
+the result has EdgeBench's log-time form. Heterogeneous discrimination, score
+noise, and mixtures of benchmark families generally produce a mixture rather
+than one exact sigmoid.
+
+This bridge is theoretical, not a license to merge unlike evaluations. A
+practical IRT fit needs the same system configuration measured across several
+benchmarks. In the current corpus, strict identities split model and agent
+evaluations into disconnected components; relaxing identity would conflate
+tools, scaffolds, tracks, and inference budgets. IRT is therefore a useful
+local sensitivity analysis and future calibration route, not the primary
+index.
+
+## 5. A latent exposure-threshold model
+
+Let \(A(t)\ge0\) be cumulative effective exposure to progress opportunities.
+It can summarize valid experiments, informative feedback, retained experience,
+training effort, search, and algorithmic efficiency. Give threshold \(j\) a
+discoverability \(\lambda_j>0\), and posit
+
+\[
+\Pr(U_j>t\mid\lambda_j)=\exp[-\lambda_jA(t)].
+\]
+
+If threshold discoverabilities follow distribution \(G\), the expected latent
 unlocked fraction is
 
 \[
 \boxed{
-x(t)=1-\mathbb{E}_{\lambda\sim G}
-\left[e^{-\lambda A(t)}\right]
-=1-\mathcal{L}_G(A(t))
+F_U(t)
+=1-\mathbb E_{\lambda\sim G}e^{-\lambda A(t)}
+=1-\mathcal L_G(A(t))
 },
 \]
 
-where \(\mathcal{L}_G\) is the Laplace transform of \(G\). This is a
-heterogeneous first-hit or frailty model. Conditional independence is one
-possible microfoundation, but it is not required for the aggregate
-representation.
+where \(\mathcal L_G\) is the Laplace transform of \(G\).
 
-An especially transparent case is
-\(\lambda\sim\mathrm{Exponential}(1)\):
+For \(\lambda\sim\mathrm{Exponential}(1)\),
 
 \[
-x(t)=\frac{A(t)}{1+A(t)}
+F_U(t)
+=\frac{A(t)}{1+A(t)}
 =\sigma(\log A(t)),
 \]
 
-and therefore
+so
+
+\[
+\frac{dF_U}{dt}
+=
+\frac{d\log A}{dt}F_U(1-F_U).
+\]
+
+This supplies one microfoundation for a sigmoid: easy or discoverable score
+mass is exhausted before difficult mass. It is not unique. Frontier expansion
+on a well-mixed task graph, a distribution of IRT-like difficulty thresholds,
+or other heterogeneous first-passage processes can produce the same aggregate
+shape.
+
+## 6. Unlock and detection are different processes
+
+Let \(\rho_b(t)\) be the hazard that an already unlocked threshold on benchmark
+\(b\) is comparably tested and publicly reported. A threshold moves through
+
+\[
+\text{locked}
+\longrightarrow
+\text{unlocked but undetected}
+\longrightarrow
+\text{detected}.
+\]
+
+Conditional on latent unlock at time \(u\), the public-detection CDF is
 
 \[
 \boxed{
-\frac{dx}{dt}
+F_T(t)
 =
-\frac{d\log A}{dt}\,x(1-x)
+\int_{-\infty}^{t}
+\left[
+1-\exp\left(-\int_u^t\rho_b(s)\,ds\right)
+\right]dF_U(u)
 }.
 \]
 
-The same macroscopic equation can arise from different mechanisms. EdgeBench,
-for example, derives \(x(1-x)\) from frontier expansion on a latent task graph:
-unlocked score mass supplies reusable capability, while locked mass represents
-remaining opportunity. Its cut-mixing and fine-granularity assumptions lead to
-a logistic mean-field limit. Heterogeneous discoverability instead produces
-the same form by exhausting easy thresholds before difficult ones. Aggregate
-curve shape alone cannot distinguish these mechanisms.
+Immediate and complete measurement makes \(T=U\). Low or declining
+\(\rho_b(t)\) delays and flattens the observed curve even if latent progress
+continues. Selective reporting makes \(\rho_b\) depend on the unreported score
+and invalidates ordinary independent-censoring assumptions.
 
-More fundamentally, observations identify only the composition
-\(1-\mathcal{L}_G(A(t))\). Without an external measure or intervention on
-exposure, \(A\) and \(G\) are not separately identifiable. Almost any monotone
-curve can be represented by a suitable threshold distribution and time
-reparameterization.
+Retrospective attribution \(R^{\mathcal C}\) partially backdates a detection to
+the producing system's release or submission date. It can reduce apparent
+reporting delay, but it does not recover untested systems and is revision-prone
+as \(\mathcal C\) grows.
 
-## 4. Two clocks: interaction time and calendar time
+## 7. EdgeBench and calendar time
 
-### EdgeBench's within-run clock
-
-EdgeBench uses elapsed interaction time \(t>0\), and fits
+[EdgeBench](https://edge-bench.org/#lawanim) fits within-run interaction time
+\(t>0\) with
 
 \[
 S(t)
@@ -158,286 +299,189 @@ S(t)
 {1+(t_{\mathrm{mid}}/t)^\beta}.
 \]
 
-In the exposure model, this follows if
+In the exposure model this is the special case
 
 \[
 A_{\mathrm{run}}(t)
 =
-\left(\frac{t}{t_{\mathrm{mid}}}\right)^\beta.
-\]
-
-Then
-
-\[
+\left(\frac{t}{t_{\mathrm{mid}}}\right)^\beta,
+\qquad
 \frac{dx}{d\log t}=\beta x(1-x).
 \]
 
-EdgeBench proposes a complementary explanation for the logarithmic clock:
-when each additive increase in task-graph difficulty exposes multiplicatively
-more search structure, steady raw effort reaches difficulty proportional to
-\(\log t\). The paper also stresses that the smooth law is population-level:
-individual tasks remain jagged, and an average of task sigmoids need not be a
-sigmoid unless their midpoints and speeds are sufficiently aligned.
+EdgeBench gives a complementary task-graph derivation and emphasizes that the
+smooth law is population-level: individual tasks are jagged, and mixtures of
+heterogeneous task curves need not themselves be exactly logistic. Its
+matched-budget stateful-versus-reset experiment also provides evidence that
+retained experience contributes beyond independent repeated attempts.
 
-### The calendar clock
-
-Let \(\tau\) be an ordinary calendar coordinate measured in years. If cumulative
-effective ecosystem exposure grows approximately exponentially,
+Calendar time \(\tau\) has no natural logarithmic origin. A raw-calendar
+sigmoid instead requires
 
 \[
 A_{\mathrm{eco}}(\tau)
-=
+\propto
 \exp[k(\tau-\tau_{\mathrm{mid}})],
 \]
 
-then the same exponential-discoverability model gives
+which yields
 
 \[
 x(\tau)=\sigma[k(\tau-\tau_{\mathrm{mid}})].
 \]
 
-This is a sigmoid in **raw calendar time**, not in the logarithm of a calendar
-date. Taking the logarithm of a year number would depend on an arbitrary date
-origin. The substantive hypothesis is instead that the logarithm of effective
-innovation exposure is approximately affine in calendar time.
+The substantive claim is therefore not “take the logarithm of the year.” It is
+that the logarithm of effective ecosystem exposure is approximately affine in
+ordinary calendar time. That claim must predict held-out periods or agree with
+an external exposure proxy; it cannot be inferred from an attractive fit.
 
-That hypothesis is plausible in a regime where research compute, investment,
-experimentation, and algorithmic efficiency compound, but the benchmark data
-do not establish it by themselves. EdgeBench separately reports a release-date
-trend in two-hour environment-learning gains on a standardized 18-task slice.
-That controlled comparison is closer to measuring changing learning speed than
-heterogeneous vendor-reported benchmark records.
+## 8. What the curve cannot identify
 
-## 5. The boundary of the learning claim
+The observed frontier alone does not separately identify:
 
-A rising best-so-far curve is not sufficient evidence of learning. An
-operational learning claim requires past experience or accumulated knowledge
-to causally improve the distribution of future outcomes.
+- latent unlock \(U\), retrospective attribution \(R^{\mathcal C}\), and public
+  detection \(T^{\mathcal C}\);
+- exposure \(A(t)\) and discoverability distribution \(G\);
+- technical progress and an increasing number of evaluation attempts;
+- capability change and changing benchmark coverage;
+- a finite attainable ceiling and a slowly moving upper tail;
+- a shared law and a mixture of benchmark-specific laws;
+- base-model progress, scaffold improvement, tools, inference compute,
+  contamination, and benchmark-specific optimization.
 
-Within one stateful agent run, this can be tested by holding total effort fixed
-and comparing retained experience with resets. EdgeBench performs such a
-comparison: continuous runs outperform independent restarts under the same
-time budget. Test-Time Training to Discover similarly compares parameter
-updates against matched-budget Best-of-\(N\) search.
-
-The calendar frontier is different. Its successive records may come from
-different organizations, base models, agents, scaffolds, and test-time
-budgets. It can reasonably be interpreted as cumulative innovation or
-ecosystem-level learning, because later systems may inherit research knowledge
-from earlier work. But the observable is only a **retrospectively measured
-system frontier** (or, on the alternative clock, a public-evidence frontier).
-It does not show that one model learned continuously, nor does it separate
-training progress, inference-time search, benchmark-specific tuning,
-contamination, and reporting selection.
-
-Continuous adaptation is not guaranteed to help. Agentic test-time training
-work reports that repeated self-training text can amplify drift, with results
-suggesting that its gains mainly preserve existing competence rather than
-create new abilities. AgentOdyssey reports exploration collapse, memory
-failures, and results consistent with catastrophic forgetting in long-horizon
-agents. Effective exposure \(A(t)\) should therefore not be assumed to grow at
-a constant positive rate: redundant attempts, forgetting, or uninformative
-feedback can reduce \(A'(t)\).
-
-## 6. The repeated-sampling null
-
-Suppose a benchmark receives \(n\) evaluations whose scores are independent
-draws from a stationary distribution with CDF \(F_b\). Even with no improvement
-in that distribution, the maximum \(M_{b,n}\) rises:
+The exposure representation is especially underidentified. For any monotone
+\(0<X(t)<1\), defining
 
 \[
-\Pr(M_{b,n}<q)=F_b(q)^n.
+A(t)=\frac{X(t)}{1-X(t)}
 \]
 
-More evaluations therefore create new records by chance. Calendar-time
-first-hit curves can mix at least four processes:
+makes the exponential-discoverability model fit exactly. A common clock becomes
+a scientific hypothesis only when it is fixed on one subset and predicts a
+different benchmark family, vintage, source, or future period.
+
+Likewise, rising maxima do not require a changing score distribution. If
+\(n\) scores are independent draws from a stationary CDF \(H_b\),
 
 \[
-\text{technical progress}
-+\text{more sampling opportunities}
-+\text{selective publication}
-+\text{changing benchmark coverage}.
+\Pr(M_{b,n}<q)=H_b(q)^n.
 \]
 
-A credible ecosystem-learning result must exceed a repeated-sampling null.
-One option is to simulate stationary score draws using the actual number and
-timing of comparable evaluations. A stronger design evaluates a fixed panel
-under a standardized harness at regular intervals. Analyses should retain all
-comparable observations, not only frontier records, because non-record scores
-help determine whether the underlying score distribution is shifting.
+More attempts alone produce new records. Repeated-sampling and
+schedule-preserving nulls are therefore mandatory. This mechanism is
+empirically important in large-sample inference; see [Large Language
+Monkeys](https://arxiv.org/abs/2407.21787) and work on [optimal test-time
+compute](https://openreview.net/pdf?id=4FWAwZtd2n).
 
-## 7. Measurement coverage and censoring
+## 9. Estimation as a clustered event-time problem
 
-Let \(\pi_b(\tau)\) denote the probability that relevant new systems are
-publicly and comparably evaluated on benchmark \(b\). A reduced-form public
-exposure is
+For a parametric assigned-time CDF \(F_\theta\), continuous score mass suggests
+the weighted likelihood
 
 \[
-H_b(\tau)
+\ell(\theta)
 =
-\int^\tau \pi_b(s)\,dA_{\mathrm{eco}}(s),
-\qquad
-x_b^{\mathrm{obs}}(\tau)
-=
-1-\mathcal{L}_{G_b}(H_b(\tau)).
+\sum_i w_i
+\begin{cases}
+\log F_\theta(R_i), & \text{left-censored},\\
+\log f_\theta(t_i), & \text{exact assigned event},\\
+\log[1-F_\theta(L_i)], & \text{right-censored}.
+\end{cases}
 \]
 
-When no new comparable measurement occurs, \(\pi_b\) is effectively zero and
-the observed frontier remains flat. On the public-evidence axis, that plateau
-means “no new public first hit,” not “no latent capability improvement.” On the
-retrospective capability axis, a future back-test may move an attributed hit
-backward in time, so the historical curve is revision-prone.
+Interval terms
+\(\log[F_\theta(R_i)-F_\theta(L_i)]\) are appropriate only when both bounds have
+valid inspection semantics. Nonparametric interval-censored estimation can use
+the [Turnbull
+framework](https://rss.onlinelibrary.wiley.com/doi/10.1111/j.2517-6161.1976.tb01597.x).
 
-The censoring semantics depend on the clock:
+This likelihood is best viewed as a score-mass quasi-likelihood. Thresholds
+crossed by the same jump are tied, benchmarks share tasks and training data,
+and one model release can move many frontiers. Uncertainty must cluster by
+benchmark or family and, where possible, by system release. Monthly
+carry-forward markers are deterministic state displays and must not be counted
+as independent events.
 
-- On the public-evidence axis, time before benchmark release or corpus entry is
-  **not at risk / NA** (left truncation), not a score of zero.
-- On the retrospective capability axis, a later back-test may attribute a
-  crossing to a system released before the benchmark. This is an explicitly
-  flagged retrospective reconstruction, not evidence that the hit was
-  observable then.
-- Thresholds below the first recorded score: **left-censored**.
-- Previously attained thresholds: permanently **carried forward**.
-- Thresholds above the last observed frontier at the analysis cutoff:
-  **right-censored**.
+Candidate calendar laws should include at least logistic, probit, Gompertz,
+upper-tail/log-error, a fitted-ceiling or cure model, and no-change. In-sample
+\(R^2\) and AICc are descriptive. The primary comparison is rolling-origin
+90/180-day prediction under a predeclared loss, with benchmark-cluster
+uncertainty.
 
-Carry-forward is correct on either explicitly chosen first-hit axis because an
-assigned threshold crossing cannot become unattained. It would not be
-sufficient for estimating the current latent capability of an untested model.
-A separate freshness or active-coverage series should report the fraction of
-the panel receiving recent comparable evaluations.
+Because the current corpus lacks complete disclosure dates, such backtests are
+**retrospective pseudo-out-of-sample**: future backfills can leak into the
+reconstructed past. A true prospective test requires frozen corpus snapshots
+or a `known_by_date` field.
 
-Coverage is also likely informative. Labs may report benchmarks on which a
-model performs well; saturated benchmarks disappear; and new editions replace
-old ones. Without standardized backtesting or an explicit observation model,
-latent progress and evaluation propensity cannot be disentangled.
+## 10. Tests that can falsify the theory
 
-## 8. Why log-error and power laws can coexist with a sigmoid
+A useful exposure law should survive tests it was not constructed to pass:
 
-Let \(R=1-x\) be remaining unattained score mass. Under exponential
-discoverability,
+1. **Future prediction.** An early fit should beat no-change and upper-tail
+   baselines on later score mass.
+2. **Clock transfer.** One calendar clock should transfer across benchmark
+   vintage, family, and source without refitting its functional form.
+3. **Schedule null.** The observed gain should exceed stationary-score
+   simulations with matched evaluation dates and counts.
+4. **Measurement simulation.** Selective reporting, saturation retirement, and
+   retrospective backdating alone should not routinely reproduce the observed
+   law.
+5. **Jump robustness.** Results should not disappear after removing the largest
+   release-level jumps or using one edition per benchmark family.
+6. **Coverage intervention.** Regular backfills of stale benchmarks should not
+   radically rewrite the inferred curve.
+7. **Exposure intervention.** Multiplying measured valid attempt throughput
+   should shift the time scale as predicted while preserving shape.
+8. **Learning control.** At fixed total compute, retained-state systems should
+   outperform matched resets before the calendar curve is called a learning
+   curve in the strict causal sense.
 
-\[
-R(A)=\frac{1}{1+A}.
-\]
+Failure is informative. If several S-curves fit in sample but cannot beat
+no-change prospectively, the correct conclusion is a smooth retrospective
+description, not a scaling law.
 
-For EdgeBench's \(A(t)\propto t^\beta\),
+## 11. A prospective protocol
 
-\[
-x(t)\sim t^\beta \quad(t\ll t_{\mathrm{mid}}),
-\qquad
-1-x(t)\sim t^{-\beta}\quad(t\gg t_{\mathrm{mid}}).
-\]
+The clean experiment is simple:
 
-Power-law score growth and power-law remaining error are therefore the early
-and late asymptotes of the same log-sigmoid.
+1. freeze a fixed panel and exact evaluation protocols;
+2. evaluate a declared set of frontier systems on a regular schedule;
+3. store system availability, evaluation, and public disclosure dates
+   separately;
+4. retain non-record scores as well as records;
+5. publish a dated corpus snapshot and preregister 6- and 12-month forecasts;
+6. report both the raw score-mass index and measurement freshness.
 
-If calendar exposure is exponential, \(A(\tau)\propto e^{k\tau}\), the upper
-tail satisfies
+This design identifies a public first-hit process far more cleanly. Matched
+stateful/reset or fixed-compute interventions are still required to identify
+learning as the causal mechanism.
 
-\[
-1-x(\tau)\sim e^{-k\tau}.
-\]
+## 12. Claim in one sentence
 
-Consequently, \(\log(1-x)\) is approximately linear in calendar time. A
-log-error model winning over a fitted calendar sigmoid on a short, high-score
-window does not necessarily select a different mechanism; it may simply fit
-the sigmoid's upper tail with fewer parameters.
-
-Other discoverability distributions imply nearby shapes. A concentrated
-\(\lambda\) gives exponential survival in exposure and a Weibull curve when
-\(A\propto t^\beta\). Gamma heterogeneity gives generalized Hill curves.
-Normal or extreme-value threshold distributions in \(\log A\) lead to
-log-probit or Gompertz forms. EdgeBench reports very similar errors for several
-of these S-curves, so curve choice should rely on held-out prediction and
-mechanistic tests, not small in-sample \(R^2\) differences.
-
-## 9. Falsifiable predictions
-
-The framework makes predictions that can fail:
-
-1. **Exposure collapse.** Curves from systems differing only in attempt
-   throughput should align when plotted against measured effective exposure.
-2. **Rate intervention.** If exposure rate is multiplied by \(c\) and
-   \(A\propto t^\beta\), then \(t_{\mathrm{mid}}\) should change by
-   \(c^{-1/\beta}\) while \(\beta\) and the attainable ceiling remain stable.
-3. **Novelty prediction.** Cumulative valid, novel, feedback-bearing attempts
-   should predict progress better than wall time or raw token count. Rising
-   repetition should predict a falling effective exposure rate and plateaus.
-4. **Calendar-exposure prediction.** Raw-calendar logistic behavior should
-   weaken if external proxies show that \(\log A_{\mathrm{eco}}\) is not close
-   to linear in calendar time.
-5. **Repeated-sampling test.** The observed record curve should outperform a
-   stationary-score null with the same evaluation count and timing.
-6. **Coverage intervention.** Regular standardized backfills of old
-   benchmarks should not radically alter the inferred law. Large delayed jumps
-   correlated with testing activity would indicate observation-driven results.
-7. **Panel stability.** Parameters should remain reasonably stable under
-   domain, benchmark-vintage, source, and leave-one-benchmark-out splits.
-8. **Mechanism discrimination.** A task-graph mechanism predicts conditional
-   clustering and acceleration among related score units after a neighboring
-   unlock; a pure independent-discoverability mixture does not.
-9. **Out-of-sample forecasting.** Fits made on an early calendar window should
-   predict later first-hit mass better than linear, stationary-record, and
-   flexible monotone baselines.
-
-## 10. Estimation implications
-
-The benchmark edition, task set, metric, denominator, and score direction must
-be fixed. Model choice, scaffold, tools, and inference budget may vary because
-they are part of the system frontier; protocol changes that alter the evaluated
-task or the meaning of the metric are not comparable.
-The date rule must also match the stated estimand. Use earliest verified score
-disclosure for the public-evidence frontier; use system release or submission
-date for the retrospective capability frontier, and mark later back-tests as
-such. Never silently mix the two.
-
-A frontier jump from \(s_0\) to \(s_1\) jointly records first hits for thresholds
-in \((s_0,s_1]\). These thresholds and benchmarks hit by the same model release
-are dependent. Uncertainty should therefore use benchmark- and release-cluster
-bootstrap procedures rather than treating score points as independent.
-
-Monthly carry-forward values are useful for plotting and for an explicitly
-time-weighted loss, but they are deterministic repetitions of the same state.
-Treating them as independent observations produces overly optimistic standard
-errors and information criteria. Event-time or censored-survival likelihoods
-are more natural.
-
-Late benchmarks can be retained without aligning them to \(t-t_{\mathrm{first}}\):
-use calendar-time models with left-truncated entry, hierarchical benchmark
-effects, or fixed calendar-vintage cohorts. A fixed common panel remains a
-clear descriptive alternative, provided excluded and stale benchmarks are
-reported.
-
-Finally, a fitted \(S_{\max}\) is weakly identified when the data cover only a
-short upper tail. Boundary estimates, ceiling forecasts, and characteristic
-times should be treated as descriptive until validated out of sample.
-
-## 11. Claim in one sentence
-
-> Benchmark First Hit measures the assigned crossing times of fixed score
-> thresholds under cumulative technical exposure and selective measurement;
-> the present primary clock is retrospective capability availability, while
-> first public evidence is a distinct estimand.
-
-This statement is compatible with environment learning, test-time training,
-search, and ecosystem innovation. Distinguishing them requires interventions,
-matched-budget nulls, and explicit modeling of the observation process.
+> Benchmark First Hit is an event-time index of when fixed score mass first
+> enters an observed any-system frontier; an exposure-threshold model can
+> unify within-run and calendar curves, but selective measurement determines
+> how much latent capability becomes visible.
 
 ## Primary sources
 
 - Zhu et al., [*EdgeBench: Unveiling Scaling Laws of Learning from Real-World
-  Environments*](https://arxiv.org/abs/2607.05155), 2026; see also the
-  [official interactive explanation](https://edge-bench.org/#lawanim).
-- Yuksekgonul et al.,
-  [*Learning to Discover at Test Time*](https://arxiv.org/abs/2601.16175),
-  2026.
-- Wang et al.,
-  [*No Time Like the Present: Agentic Test-Time Training for LLM
-  Agents*](https://arxiv.org/abs/2607.03441), 2026.
-- Zhang et al.,
-  [*AgentOdyssey: Open-Ended Long-Horizon Text Game Generation for Test-Time
-  Continual Learning Agents*](https://arxiv.org/abs/2606.24893), 2026.
-- Kaplan et al.,
-  [*Scaling Laws for Neural Language Models*](https://arxiv.org/abs/2001.08361),
-  2020.
+  Environments*](https://arxiv.org/abs/2607.05155), 2026; [official interactive
+  explanation](https://edge-bench.org/#lawanim).
+- Sevilla et al., [*A Rosetta Stone for AI
+  Benchmarks*](https://arxiv.org/abs/2512.00193), 2025; [ECI
+  methodology](https://epoch.ai/data/eci-documentation/methodology).
+- Snell et al., [*Scaling LLM Test-Time Compute
+  Optimally*](https://openreview.net/pdf?id=4FWAwZtd2n), 2024.
+- Brown et al., [*Large Language Monkeys*](https://arxiv.org/abs/2407.21787),
+  2024.
+- Turnbull, [*The Empirical Distribution Function with Arbitrarily Grouped,
+  Censored and Truncated
+  Data*](https://rss.onlinelibrary.wiley.com/doi/10.1111/j.2517-6161.1976.tb01597.x),
+  1976.
+- Liang, Lu, and Ying, [*Joint Modeling and Analysis of Longitudinal Data with
+  Informative Observation
+  Times*](https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1541-0420.2008.01104.x),
+  2009.
+- Blum and Hardt, [*The Ladder: A Reliable Leaderboard for Machine
+  Learning Competitions*](https://proceedings.mlr.press/v37/blum15.html), 2015.
