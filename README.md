@@ -1,231 +1,248 @@
 # Benchmark First-Hit
 
-This is a reproducible history of **publicly demonstrated** AI progress.  It
-contains 666 sourced observations across 39 benchmark/version pairs, current
-through 2026-07-15.
+Benchmark First-Hit studies the best score reached by **any** model or agent on
+fixed benchmark definitions over real calendar time. The curated corpus
+currently contains **712 sourced observations across 47 benchmark/version
+pairs**, through 2026-07-21.
 
-The object of interest is not a particular model or leaderboard.  It is the
-date on which each comparable score threshold is first publicly reached by any
-model, agent, scaffold, ensemble, or test-time-compute strategy.
+This is a reproducible analysis of a curated history, not yet a claim of a
+universal scaling law. The main result is encouraging, but measurement
+coverage, retrospective dates, and benchmark dependence remain important.
 
-The main curve is deliberately **not** a fixed-model or fixed-scaffold curve.
-For each benchmark, any model, reasoning budget, tool stack, agent scaffold,
-ensemble, or test-time-compute strategy can set a new record.  The only hard
-comparability requirements are:
+## What is held fixed
 
-1. the benchmark version/task set is unchanged; and
-2. the reported metric and denominator have the same meaning.
+The frontier is intentionally system-level. Any base model, reasoning budget,
+tool stack, agent scaffold, ensemble, or test-time-compute strategy may set a
+record. The hard comparability requirements are:
+
+1. the benchmark edition and evaluated task set are unchanged; and
+2. the metric, denominator, and score direction have the same meaning.
 
 That is why ARC-AGI-1/2, MATH/MATH-500, AIME 2024/2025,
 OSWorld/OSWorld-Verified, and SWE-bench Full/Verified are separate series.
-Pass@1 is not silently joined to pass@64 or consensus@64.
+Pass@1 is not joined to pass@64. Scaffold changes are retained and documented
+because the object is the best available system, not an isolated base model.
 
-## The general first-hit theory
+Rows with an explicit version or subset mismatch remain auditable in the CSV
+but have `frontier_eligible=0`. The analysis now fails fast if such a row is
+accidentally made eligible.
 
-Let the historical frontier for benchmark `b` be
+## Two dates, two questions
 
-```text
-x_b(d) = max score publicly achieved on or before calendar date d,
-```
+There are two legitimate first-hit clocks:
 
-after mapping the score to `[0, 1]`.  Draw a score threshold `Q` uniformly from
-`[0, 1]` and define its first-crossing date
+| Clock | Date assigned to a score | Question answered |
+|---|---|---|
+| Public evidence | first verified score disclosure | What had the public record established by this date? |
+| Retrospective capability | system release or submission date, including later back-tests | When did a system later shown to have this capability become available? |
 
-```text
-T_Q = inf { d : x_b(d) >= Q }.
-```
+The current primary `date` is the **retrospective capability date**.
+`date_basis` records whether a row is contemporaneous, a leaderboard
+submission, a publication date, or a retrospective release attribution.
+Consequently, this repository must not be described as a pure
+publication-first-hit history.
 
-Then, exactly,
+The audit currently finds 38 observations whose attributed system date predates
+the benchmark release. These are meaningful retrospective back-tests, but they
+were not observable first hits at the time. A future public-evidence analysis
+needs a separately verified disclosure date for every such row.
 
-```text
-x_b(d) = P(T_Q <= d).
-```
+## The first-hit identity and the learning hypothesis
 
-So every cumulative-best benchmark curve is an empirical CDF of score-threshold
-first-hit dates.  This identity is the representation layer; it is not yet a
-mechanism.
+For benchmark \(b\), let \(m_b(\tau)\in[0,1]\) be its best-so-far score on one
+chosen date axis. If \(Q\sim\mathrm{Uniform}(0,1)\) and
 
-The candidate mechanism is heterogeneous discoverability plus cumulative
-exposure:
+\[
+T_{bQ}=\inf\{\tau:m_b(\tau)\ge Q\},
+\]
 
-```text
-P(T_i > t | lambda_i) = exp(-lambda_i A(t)).
-```
+then, exactly,
 
-If score-atom discoverabilities are exponentially distributed,
-`lambda_i ~ Exp(1)`, then
+\[
+m_b(\tau)=\Pr(T_{bQ}\le\tau).
+\]
 
-```text
-x(t) = A(t) / (1 + A(t)).
-```
+The equal-benchmark composite is therefore the empirical CDF of first-hit
+dates for a uniformly selected benchmark and score height. This is an identity
+for any monotone frontier; by itself it does not explain the curve.
 
-The same mechanism produces two useful clocks:
+A candidate mechanism is heterogeneous threshold discoverability under
+cumulative effective exposure \(A(t)\):
 
-- Within one long agent run, `A(t) = (t / t_mid)^beta` gives EdgeBench's
-  log-time sigmoid:
-  `x(t) = 1 / (1 + (t_mid / t)^beta)`.
-- Across AI releases, if ecosystem R&D exposure is roughly exponential in
-  calendar date, `A(d) = exp(k(d - d_mid))`, then `logit(x(d))` is linear in
-  calendar date.
+\[
+\Pr(T>t\mid\lambda)=e^{-\lambda A(t)}.
+\]
 
-This is the generalization being tested here: training, inference compute,
-tools, scaffolds, and agent engineering are all possible contributors to the
-same effective exposure clock.  Exponential discoverability is only the
-special case that gives an exact logistic; Gamma, lognormal, mixtures, and
-moving ceilings imply other smooth CDFs.
+If \(\lambda\sim\mathrm{Exponential}(1)\), then
 
-## EdgeBench score convention
+\[
+x(t)=\frac{A(t)}{1+A(t)}=\sigma(\log A(t)).
+\]
 
-This project now follows EdgeBench's aggregation convention directly.  Each
-benchmark/task score must first be on its own 0--100 task scale.  All selected
-benchmarks already report a percentage-like 0--100 score, so:
+This connects the two settings the project is trying to explain:
 
-```text
-edge_score_b = clip(raw_published_score_b, 0, 100).
-```
+- **EdgeBench / within-run learning:** if
+  \(A_{\mathrm{run}}(t)\propto t^\beta\), then
+  \(x(t)=1/[1+(t_{\mathrm{mid}}/t)^\beta]\), a sigmoid in log interaction
+  time.
+- **Calendar frontier:** if effective ecosystem exposure compounds so that
+  \(A_{\mathrm{eco}}(\tau)\propto e^{k\tau}\), then \(x(\tau)\) is a sigmoid
+  in ordinary calendar time.
 
-Random-chance floors are **not subtracted**.  A chance-adjusted score is kept
-as an audit-only column, but it is not used by any frontier, composite, fit, or
-plot.  This matches EdgeBench: task runs are rescaled to the task's 0--100
-scale, task scores are averaged, and the theoretical normalization is
-`x(t) = S(t) / S_max`, where `S_max` is a fitted attainable ceiling rather than
-an assumed universal psychometric ceiling.
+So both can share an exposure–threshold structure, but only the within-run
+setting directly supports a causal learning claim through retained-state versus
+reset or matched-budget controls. The calendar frontier is evidence of
+ecosystem-level cumulative innovation; it does not prove that one model
+learned continuously.
 
-For each benchmark and public-evidence date:
+The full derivation, alternative mechanisms, repeated-sampling null, censoring
+model, and falsifiable predictions are in [THEORY.md](THEORY.md).
 
-```text
-daily_best_b(d) = max eligible score published on date d
-frontier_b(d)   = max_{u <= d} daily_best_b(u)
-```
+## EdgeBench-style construction
 
-The primary composite is a fixed-panel, equal-benchmark arithmetic mean,
-exactly mirroring EdgeBench's equal-task benchmark average.  It does not split
-benchmarks into reasoning, multimodal, coding, or agent categories.  The first
-composite date is the first date at which every benchmark in the panel has at
-least one observation.  This avoids silently changing the index composition.
+The aggregation follows EdgeBench's score convention:
 
-### Exact correspondence to EdgeBench `#lawanim`
+1. Keep each benchmark on its native percentage-like 0–100 task scale.
+   Random-chance floors are **not** subtracted.
+2. Take the cumulative maximum separately for every comparable benchmark
+   edition and metric.
+3. Use a fixed panel and average benchmarks with equal weight.
+4. Fit only genuine dates on which the composite changes. Monthly
+   carry-forward states are exported for display, but are not treated as new
+   independent evidence.
+5. Compare linear score, log score, log remaining error, fixed-100 logit, and
+   an Edge-style calendar sigmoid with fitted ceiling:
 
-The official animation first merges 134 tasks x 3 runs into a pointwise mean
-on a common interaction-time grid.  It then fits
+\[
+S(\tau)=\frac{S_{\max}}
+{1+\exp[-k(\tau-\tau_{\mathrm{mid}})]}.
+\]
 
-```text
-S(t) = S_max / (1 + (t_mid / t)^beta),
-```
-
-and finally plots `log[S / (S_max - S)]` against `log(t)`, which is a line with
-slope `beta`.  Crucially, `S_max` is fitted separately for every displayed
-model and is not fixed to 100.
-
-Our benchmark-history analogue is:
-
-1. keep every comparable public system score as an observation;
-2. take the best-so-far envelope separately for each benchmark version/metric;
-3. sample those step curves on a common monthly calendar grid and average
-   benchmarks with equal weight;
-4. fit `S(d) = S_max / (1 + exp[-k(d-d_mid)])` and inspect
-   `log[S/(S_max-S)]` against calendar date.
-
-The last substitution is deliberate.  EdgeBench has a natural run origin, so
-`log(t)` is defined.  Absolute calendar time has no non-arbitrary zero.  Under
-the first-hit/exposure interpretation, exponentially growing ecosystem effort
-makes log-odds linear in calendar date.  A literal log-time fit from a chosen
-calendar origin is therefore reported only as a sensitivity analysis, not as
-the primary law.
+EdgeBench linearizes its within-run law by plotting
+\(\log[S/(S_{\max}-S)]\) against \(\log t\). Calendar dates have no natural
+zero, so this project instead tests whether the same fitted-ceiling log-odds
+are linear in **raw calendar time**. \(S_{\max}\) is fitted rather than forced
+to 100.
 
 ## Current result
 
-Four two-parameter calendar-time baselines are compared on the original 0-100
-scale (linear score, log score, log remaining error, and fixed-100 logit), plus
-the three-parameter Edge calendar generalization with fitted `S_max`.  Fits use
-a common monthly grid; AICc is reported so the extra ceiling parameter does not
-win solely by construction.
-
-| Fixed panel | Benchmarks | Events | Window | Start → end | Edge R² | Best by AICc |
+| Fixed comparable panel | Benchmarks | Genuine composite events | Window | Start → end | Edge-calendar R² | Best by AICc |
 |---|---:|---:|---|---:|---:|---|
-| All-benchmark frontier | 28 | 22 | 2025-08-07 → 2026-07-09 | 71.99 → 83.54 | 0.983 | log-error |
+| Equal-weight panel | 31 | 31 | 2025-08-07 → 2026-07-09 | 71.82 → 81.68 | 0.960 | Edge calendar |
 
-The honest conclusion is **not** that a unique universal log-sigmoid law has
-already been identified.  The single all-benchmark curve is visually very
-straight in fitted-ceiling log-odds space (`R²` 0.981), and the raw-score Edge
-calendar fit has `R²` 0.983 with fitted `S_max=91.89`.  However, after the AICc
-penalty, the two-parameter log-error model narrowly beats the three-parameter
-Edge calendar model.  This is strong evidence for a smooth first-hit CDF, but
-not yet for one uniquely identified mechanism.
+The fitted calendar curve has \(S_{\max}=86.42\), \(k=1.68\) per year, and a
+fitted-frontier-odds doubling time of about 151 days. Its AICc is -25.23,
+compared with -19.71 for the strongest two-parameter baseline, log remaining
+error.
 
-The dataset tracks all 39 benchmark editions.  The fixed real-calendar panel
-uses 28 editions; 11 very recent editions are retained for individual analysis
-but are not forced into the composite because their late start would collapse
-the common calendar window to only a few months.  Of the 39, 35 have at least
-three genuine frontier improvements and are shown in the benchmark-wise plot.
-The four two-event histories remain in the data and summary table with
-`best_fit=insufficient_points`, but are not plotted.  Among the 35 displayed
-histories, the best raw-score fit is log-error for 20, log-score for 6, linear
-for 5, and fixed-100 logit for 4.  The exact logistic is therefore not a
-universal per-benchmark law in this snapshot.
+The result survives several descriptive checks:
 
-![All-benchmark Edge calendar fit](output/edge_calendar_fit.png)
+- A 400-replicate benchmark-cluster bootstrap gives Edge-calendar
+  \(R^2\in[0.890,0.975]\), but the ceiling interval reaches the bound
+  (\(S_{\max}\in[79.72,100]\)); the ceiling and long-range forecast are weakly
+  identified.
+- Leave-one-benchmark-out Edge-calendar \(R^2\) ranges from 0.943 to 0.969.
+  Edge calendar wins AICc in 30 of 31 omissions.
+- Under 4,000 within-benchmark date permutations, the stationary-record null
+  has a median panel gain of 2.18 points and a 97.5th percentile of 4.71,
+  versus 9.86 observed (\(p=0.00025\) with the finite-simulation correction).
 
-![Underlying first-hit events](output/edge_calendar_linearization.png)
+This rejects that particular stationary record-process null; it is not proof
+that technical learning is the only cause. Selective reporting, correlated
+benchmarks, and nonstationary evaluation coverage can still matter.
+
+The coverage diagnostic is the largest warning. At the 2026-07-21 cutoff, only
+9/31 panel benchmarks had a comparable observation in the trailing 180 days
+and 13/31 in the trailing 365 days; median measurement age was 425 days.
+Carry-forward is correct for first-hit bookkeeping, but it is not a new
+measurement of the remaining locked thresholds.
+
+Across individual series, 39 of 44 eligible benchmark histories have at least
+three genuine frontier events. Their best simple raw-score fits are
+log-error for 20, log-score for 10, fixed-100 logit for 5, and linear for 4.
+The calendar sigmoid is therefore not being claimed as a universal
+per-benchmark functional form.
+
+![Fixed-panel Edge calendar fit](output/edge_calendar_fit.png)
+
+![Underlying benchmark frontier events](output/edge_calendar_linearization.png)
 
 ![Calendar-time fit comparison](output/composite_fit_comparison.png)
 
-## Files
+![Measurement freshness](output/measurement_coverage.png)
 
-- `data/benchmark_observations.csv`: all sourced observations, protocol fields,
-  public-evidence dates, and eligibility for the max frontier.
-- `data/benchmark_metadata.csv`: benchmark versions, chance floors, domains,
-  known breaks, and source references.
-- `scripts/analyze.py`: complete frontier construction, aggregation, fitting,
-  CSV export, and chart generation.
-- `output/edge_calendar_fit.png`, `output/edge_calendar_linearization.png`, and
-  `output/composite_fit_comparison.png`: headline results.  The analysis script
-  regenerates these plus the detailed diagnostic outputs.
+## New benchmark audit
 
-Rebuild everything with:
+This update adds 46 official-source observations across eight well-known
+benchmarks:
+
+| Benchmark | Added scores | Eligible frontier events | Fixed panel | Decision |
+|---|---:|---:|:---:|---|
+| DROP, 3-shot F1 | 5 | 4 | Yes | Stable task/metric chain across official model cards |
+| ChartQA test, relaxed accuracy | 5 | 3 | Yes | Stable test split and relaxed-accuracy metric |
+| MLE-bench v1 All, Any Medal | 14 | 14 | Yes | Official main leaderboard only |
+| GDM-MRCR v2, 8-needle 128k average | 4 | 3 | No | Comparable individual series; too recent for the fixed panel |
+| tau2-bench Retail, pass¹ | 5 | 3 | No | Comparable metric; recent and harness-sensitive |
+| IFEval vendor aggregate | 5 | 0 | No | Vendors do not identify the same strict/loose aggregation |
+| MMMU-Pro, no tools | 4 | 0 | No | Dataset revisions are not pinned to evaluated commits |
+| FrontierMath Tiers 1–3 v1 private-290 | 4 | 0 | No | Exact set/scaffold uncertainty and a 10× token-budget break |
+
+The excluded scores are still useful evidence: they show where more source
+work or a clean new series is needed without silently forcing incomparable
+numbers into the main maximum.
+
+## Files and reproduction
+
+- `data/benchmark_observations.csv`: sourced scores, date semantics, protocols,
+  tools/scaffolds, and frontier eligibility.
+- `data/benchmark_metadata.csv`: exact benchmark editions, metrics, release
+  dates, known breaks, and fixed-panel membership.
+- `scripts/analyze.py`: validation, frontiers, event-time fits, coverage,
+  benchmark bootstrap, leave-one-out analysis, stationary-record null, CSV
+  exports, and figures.
+- `output/`: generated detailed tables and plots. The public repository tracks
+  only the four headline figures to stay compact.
+
+Install dependencies and rebuild:
 
 ```bash
+python3 -m pip install -r requirements.txt
 python3 scripts/analyze.py
 ```
 
 ## Primary sources
 
-- EdgeBench: [paper](https://edge-bench.org/paper.pdf),
-  [score rescaling](https://github.com/ByteDance-Seed/EdgeBench/blob/main/sforge/harness/score_rescale.py),
-  [best-so-far selection](https://github.com/ByteDance-Seed/EdgeBench/blob/main/sforge/harness/selection.py)
+- EdgeBench: [interactive law explanation](https://edge-bench.org/#lawanim),
+  [paper](https://arxiv.org/abs/2607.05155), and
+  [official code](https://github.com/ByteDance-Seed/EdgeBench)
 - [SWE-bench official leaderboard](https://www.swebench.com/index.html)
-- [GAIA official leaderboard](https://huggingface.co/spaces/gaia-benchmark/leaderboard)
-- [ARC Prize leaderboard](https://arcprize.org/leaderboard) and
-  [2025 technical report](https://arxiv.org/abs/2601.10904)
-- [HLE paper](https://arxiv.org/abs/2501.14249) and
-  [Hugging Face benchmark leaderboard](https://huggingface.co/datasets/cais/hle)
-- [MMLU](https://arxiv.org/abs/2009.03300),
-  [MMLU-Pro](https://proceedings.neurips.cc/paper_files/paper/2024/file/ad236edc564f3e3156e1b2feafb99a24-Paper-Datasets_and_Benchmarks_Track.pdf),
-  [GPQA](https://arxiv.org/abs/2311.12022),
-  [GSM8K](https://arxiv.org/abs/2110.14168), and
-  [MATH](https://arxiv.org/abs/2103.03874)
-- [WebArena](https://arxiv.org/abs/2307.13854),
-  [OSWorld](https://arxiv.org/abs/2404.07972),
-  [tau-bench](https://github.com/sierra-research/tau-bench),
-  [Terminal-Bench 2.0](https://www.tbench.ai/leaderboard/terminal-bench/2.0?agents=Terminus+2), and
+- [ARC Prize leaderboard](https://arcprize.org/leaderboard)
+- [HLE paper](https://arxiv.org/abs/2501.14249)
+- [OpenAI simple-evals](https://github.com/openai/simple-evals) and
+  [MLE-bench](https://github.com/openai/mle-bench)
+- [Meta Llama model cards](https://github.com/meta-llama/llama-models)
+- [Google DeepMind model cards](https://deepmind.google/models/model-cards/)
+- [Anthropic transparency hub and system cards](https://www.anthropic.com/transparency)
+- [tau2-bench](https://github.com/sierra-research/tau2-bench)
+- [FrontierMath Tiers 1–3 v1](https://epoch.ai/benchmarks/frontiermath-tiers-1-3-v1)
+- [GAIA](https://huggingface.co/spaces/gaia-benchmark/leaderboard),
+  [WebArena](https://arxiv.org/abs/2307.13854),
+  [OSWorld](https://arxiv.org/abs/2404.07972), and
   [BrowseComp](https://openai.com/index/browsecomp/)
 
 ## Important limitations
 
-- Public benchmark scores are not a random sample; labs selectively report
-  strong results.
-- Release, evaluation, and leaderboard-submission dates are all retained in
-  `date_basis`, but are only approximations to the true first-hit date.
-- The frontier intentionally mixes base-model progress with tool use, scaffold
-  engineering, ensembles, and inference compute.  It measures the best public
-  system, not isolated model capability.
-- Contamination and benchmark saturation remain real.  They are documented in
-  metadata and notes rather than removed from the anything-goes frontier.
-- After a benchmark's first observation, its public best-so-far score is carried
-  forward.  A flat segment therefore means "no newly demonstrated first hit,"
-  not "no latent capability progress."  Benchmarks without recent comparable
-  evaluations are right-censored measurement processes, not evidence of
-  capability stagnation.
-- Four benchmark histories currently have only two record events.  They are
-  retained for provenance but omitted from the per-benchmark curve plot and
-  functional-form fitting until a third genuine improvement appears.
+- The corpus is curated from official reports and leaderboards, not an
+  exhaustive registry. The source-extraction process is not fully automated.
+- Benchmark reporting is selective, and old or saturated benchmarks are often
+  no longer measured.
+- The primary time axis is revision-prone: later back-tests can revise the
+  inferred capability history backward.
+- Benchmark families and editions are correlated but currently receive equal
+  weight as separate fixed tasks.
+- The stationary permutation null preserves each benchmark's observed score
+  distribution and evaluation count, but it cannot remove selection,
+  contamination, or changing task-targeted effort.
+- \(R^2\), AICc, and fitted \(S_{\max}\) are descriptive in-sample statistics.
+  A strong scaling-law claim requires prospective, out-of-sample prediction on
+  a regularly measured fixed panel.
